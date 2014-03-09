@@ -1,0 +1,11 @@
+cron:
+- description: weekly crawling
+  url: /crawling/
+  schedule: every 10 minutes from 08:00 to 22:00
+  timezone: Asia/Seoul
+
+- description: check failed push and remove token
+  url: /check_push_error/
+  schedule: every 1 hours from 08:00 to 22:00
+  timezone: Asia/Seoul
+

@@ -9,17 +9,31 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-#- url: .*
-#  script: main.app
+- url: /crawling/.*
+  script: crawler.app
+  login: admin
+
+- url: /check_push_error/.*
+  script: check_push_error.app
+  login: admin
+
 
 # Endpoints handler
 - url: /_ah/spi/.*
   script: weekly_api.APPLICATION
 
+- url: .*
+  script: main.app
+
 libraries:
-#- name: webapp2
-#  version: "2.5.2"
+- name: webapp2
+  version: "2.5.2"
+
 - name: pycrypto
   version: latest
+
 - name: endpoints
   version: 1.0
+
+- name: ssl
+  version: latest

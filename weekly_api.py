@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Bunker 1 Church Weekly API implemented using Google Cloud Endpoints.
 
 Defined here are the ProtoRPC messages needed to define Schemas for methods
@@ -9,45 +11,93 @@ from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
+from models import Weekly, Token
+from apns import APNs, Payload
+from datetime import datetime
+
 package = 'Weekly'
 
-class Weekly(messages.Message):
-    """Weekly that stores a message."""
-    message = messages.StringField(1)
+class WeeklyMessage(messages.Message):
+  """Weekly that stores a message."""
+  title = messages.StringField(1)
+  speaker = messages.StringField(2)
+  date = messages.StringField(3)
+  link = messages.StringField(4)
 
 
 class WeeklyCollection(messages.Message):
-    """Collection of Weeklies."""
-    items = messages.MessageField(Weekly, 1, repeated=True)
+  """Collection of Weeklies."""
+  items = messages.MessageField(WeeklyMessage, 1, repeated=True)
+
+class RegistTokenResult(messages.Message):
+  result = messages.StringField(1)
 
 
-STORED_GREETINGS = WeeklyCollection(items=[
-    Weekly(message='hello world!'),
-    Weekly(message='goodbye world!'),
-])
-
-@endpoints.api(name='b1cweekly', version='v1')
+@endpoints.api(name='bunker1cc', version='v1')
 class B1CWeeklyApi(remote.Service):
     """Bunker 1 Church Weekly API v1."""
 
     @endpoints.method(message_types.VoidMessage, WeeklyCollection,
                       path='weekly', http_method='GET',
-                      name='weeklies.listWeekly')
+                      name='weekly.list')
     def weeklies_list(self, unused_request):
-        return STORED_GREETINGS
+      data = Weekly.query().fetch()
 
-    ID_RESOURCE = endpoints.ResourceContainer(
+      weeklies = WeeklyCollection(items = [
+          WeeklyMessage(
+            title = weekly.title,
+            speaker = weekly.speaker,
+            date = weekly.date.strftime('%Y%m%d'),
+            link = weekly.link,
+            ) for weekly in data 
+        ])
+
+      return weeklies
+
+    WHEN_RESOURCE = endpoints.ResourceContainer(
             message_types.VoidMessage,
-            id=messages.IntegerField(1, variant=messages.Variant.INT32))
+            when=messages.StringField(1))
 
-    @endpoints.method(ID_RESOURCE, Weekly,
-                      path='weekly/{id}', http_method='GET',
-                      name='weeklies.getWeekly')
+    @endpoints.method(WHEN_RESOURCE, WeeklyMessage,
+                      path='weekly/{when}', http_method='GET',
+                      name='weekly.get')
     def weeklies_get(self, request):
-        try:
-            return STORED_GREETINGS.items[request.id]
-        except (IndexError, TypeError):
-            raise endpoints.NotFoundException('Weekly %s not found.' %
-                                              (request.id,))
+        when = datetime.strptime(request.when,'%Y%m%d')
+        data = Weekly.query(Weekly.date==when).fetch(1)
+
+        if len(data) != 1 :
+            raise endpoints.NotFoundException('Weekly %s not found.' % (request.id,))
+
+        weekly = data[0]
+
+        return WeeklyMessage(
+            title = weekly.title,
+            speaker = weekly.speaker,
+            date = weekly.date.strftime('%Y%m%d'),
+            link = weekly.link,
+            )
+
+    REG_RESOURCE = endpoints.ResourceContainer(
+              message_types.VoidMessage,
+              token=messages.StringField(2))
+
+    @endpoints.method(REG_RESOURCE, RegistTokenResult,
+                      path='regist/{token}', http_method='POST',
+                      name='weekly.regist')
+    def regist_token(self, request):
+        if Token.query(Token.token==request.token).fetch():
+          return RegistTokenResult(result="DUP")
+
+        token = Token(token=request.token);
+        token.put();
+
+        apns = APNs(use_sandbox=True, cert_file='certs/cert.pem', key_file='certs/key.unencrypted.pem')
+        payload = Payload(alert=u"환영합니다! 벙커원 교회 주보 알림목록에 등록되었습니다!", sound="default", badge=0)
+        apns.gateway_server.send_notification(token.token, payload)
+
+        return RegistTokenResult(result="OK")
+
 
 APPLICATION = endpoints.api_server([B1CWeeklyApi])
+
+
