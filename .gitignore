@@ -37,4 +37,4 @@ nosetests.xml
 
 .DS_Store
 
-certs/.DS_Store
+certs
