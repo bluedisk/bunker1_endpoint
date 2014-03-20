@@ -3,13 +3,16 @@
 import webapp2
 from google.appengine.ext import ndb
 
-from settings import apns
-from apns import APNs
+from settings import connectToAPNS
+
 from models import PushError, Token
 from datetime import datetime
 
 class MainHandler(webapp2.RequestHandler):
-	def get(self):		
+	def get(self):
+
+        apns = connectToAPNS()
+
 		for (token_hex, fail_time) in apns.feedback_server.items():
 			
 			ndb.Key(Token,token_hex).delete()

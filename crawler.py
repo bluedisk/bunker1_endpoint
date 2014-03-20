@@ -10,8 +10,8 @@ from datetime import date
 
 import time
 
-from settings import apns
-from apns import APNs, Frame, Payload
+from settings import connectToAPNS
+from apns import Frame, Payload
 
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
@@ -115,6 +115,8 @@ class MainHandler(webapp2.RequestHandler):
 def send_to_all(text, count):
 	payload = Payload(alert=text, sound="default", badge=count)
 	tokens = Token.query().fetch()
+
+	apns = connectToAPNS();
 
 	for token in tokens:
 		apns.gateway_server.send(token.token, payload)

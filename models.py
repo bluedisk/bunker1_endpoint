@@ -13,9 +13,14 @@ class Weekly(ndb.Model):
   updated_at = ndb.DateTimeProperty(auto_now_add=True)
 
 class Token(ndb.Model):
-	token = ndb.StringProperty()
-	created_at = ndb.DateTimeProperty(auto_now_add=True)
+  os = ndb.StringProperty(default='ios')
+  
+  width = ndb.StringProperty(default='')
+  height = ndb.StringProperty(default='')
+
+  token = ndb.StringProperty()
+  created_at = ndb.DateTimeProperty(auto_now_add=True)
 
 class PushError(ndb.Model):
-	token = ndb.StringProperty()
-	deleted_at = ndb.DateTimeProperty()
+  token = ndb.StringProperty()
+  deleted_at = ndb.DateTimeProperty()
