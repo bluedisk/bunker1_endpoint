@@ -9,6 +9,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+# Endpoints handler
+- url: /_ah/spi/.*
+  script: weekly_api.APPLICATION
+
 - url: /crawling/.*
   script: crawler.app
   login: admin
@@ -16,11 +20,6 @@ handlers:
 - url: /check_push_error/.*
   script: check_push_error.app
   login: admin
-
-
-# Endpoints handler
-- url: /_ah/spi/.*
-  script: weekly_api.APPLICATION
 
 - url: .*
   script: main.app

@@ -5,7 +5,7 @@
 Defined here are the ProtoRPC messages needed to define Schemas for methods
 as well as those methods defined in an API.
 """
-
+import urllib
 import endpoints
 from protorpc import messages
 from protorpc import message_types
@@ -13,8 +13,7 @@ from protorpc import remote
 
 from models import Weekly, Token
 
-from settings import connectToAPNS
-from apns import Payload
+from push import push_to, push_to_all
 
 from datetime import datetime
 
@@ -95,10 +94,7 @@ class B1CWeeklyApi(remote.Service):
         token = Token(token=request.token, os='ios');
         token.put();
 
-        payload = Payload(alert=u"환영합니다! 벙커원 교회 주보 알림목록에 등록되었습니다!", sound="default", badge=0)
-
-        apns = connectToAPNS();
-        apns.gateway_server.send_notification(token.token, payload)
+        push_to(token, u"환영합니다! 벙커원 교회 주보 알림목록에 등록되었습니다!", 0)
 
         return RegistTokenResult(result="OK")
 
@@ -162,13 +158,11 @@ class B1CWeeklyApiV2(remote.Service):
         if Token.query(Token.token==request.token).fetch():
           return RegistTokenResult(result="DUP")
 
+        token = urllib.unquote(request.token)
         token = Token(token=request.token, os=request.os, width=request.width, height=request.height);
         token.put();
 
-        payload = Payload(alert=u"환영합니다! 벙커원 교회 주보 알림목록에 등록되었습니다!", sound="default", badge=0)
-
-        apns = connectToAPNS();
-        apns.gateway_server.send_notification(token.token, payload)
+        push_to(token, u"환영합니다! 벙커원 교회 주보 알림목록에 등록되었습니다!", 0)
 
         return RegistTokenResult(result="OK")
 

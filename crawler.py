@@ -3,18 +3,16 @@
 from bs4 import BeautifulSoup
 import requests
 import re
-
-import webapp2
-from models import Weekly, Token
-from datetime import date
-
 import time
 
-from settings import connectToAPNS
-from apns import Frame, Payload
+import webapp2
+from models import Weekly
+from datetime import date
+
+from push import push_to, push_to_all
 
 import logging
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 # get post list - mobile
 def getMobileWeeklyList():
@@ -103,26 +101,13 @@ class MainHandler(webapp2.RequestHandler):
 				updated_count = updated_count + 1
 
 
-		logging.debug("Update %d items"%updated_count)
+		if updated_count:
+			logging.info("Update %d items"%updated_count)
 
 		if updated_count == 1:
-			send_to_all(u"새로운 주보가 등록되었습니다. 다운로드 해주세요!",updated_count);
+			push_to_all(u"새로운 주보가 등록되었습니다. 다운로드 해주세요!",updated_count);
 		elif updated_count >= 2:
-			send_to_all(u"%s개의 새로운 주보가 등록되었습니다. 다운로드 해주세요!"%updated_count,updated_count);
-
-
-
-def send_to_all(text, count):
-	payload = Payload(alert=text, sound="default", badge=count)
-	tokens = Token.query().fetch()
-
-	apns = connectToAPNS();
-
-	for token in tokens:
-		apns.gateway_server.send(token.token, payload)
-
-	logging.debug("send to push : total %d tokens"%len(tokens))
-
+			push_to_all(u"%s개의 새로운 주보가 등록되었습니다. 다운로드 해주세요!"%updated_count,updated_count);
 
 app = webapp2.WSGIApplication([('.*', MainHandler) ], debug=True)
 
