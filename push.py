@@ -41,7 +41,7 @@ def push_to_all(text, count):
 
     push_to_gcm(list(token.token for token in and_tokens), text, count)
 
-    logging.debug("send to push : total %d tokens"%(len(ios_tokens)+len(and_tokens)))
+    #logging.debug("send to push : total %d tokens"%(len(ios_tokens)+len(and_tokens)))
 
 
 

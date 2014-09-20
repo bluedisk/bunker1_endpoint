@@ -7,6 +7,8 @@ as well as those methods defined in an API.
 """
 import urllib
 import endpoints
+from google.appengine.api import memcache
+
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -30,10 +32,25 @@ class WeeklyMessage(messages.Message):
 class WeeklyCollection(messages.Message):
   """Collection of Weeklies."""
   items = messages.MessageField(WeeklyMessage, 1, repeated=True)
+  store = messages.StringField(2)
 
 class RegistTokenResult(messages.Message):
   result = messages.StringField(1)
 
+def getWeeklyList():
+  store = 'mem'
+  data = memcache.get('weekly')
+
+  if not data:
+    store = 'db'
+    data = [{
+      'title' : weekly.title,
+      'speaker' : weekly.speaker,
+      'date' : weekly.date.strftime('%Y%m%d'),
+      'link' : weekly.link,
+    } for weekly in Weekly.query().fetch()]
+
+  return (data, store)
 
 @endpoints.api(name='bunker1cc', version='v1')
 class B1CWeeklyApi(remote.Service):
@@ -43,16 +60,9 @@ class B1CWeeklyApi(remote.Service):
                       path='weekly', http_method='GET',
                       name='weekly.list')
     def weeklies_list(self, unused_request):
-      data = Weekly.query().fetch()
+      data, store = getWeeklyList()
 
-      weeklies = WeeklyCollection(items = [
-          WeeklyMessage(
-            title = weekly.title,
-            speaker = weekly.speaker,
-            date = weekly.date.strftime('%Y%m%d'),
-            link = weekly.link,
-            ) for weekly in data 
-        ])
+      weeklies = WeeklyCollection(items = [WeeklyMessage(**weekly) for weekly in data ], store=store)
 
       return weeklies
 
@@ -73,10 +83,10 @@ class B1CWeeklyApi(remote.Service):
         weekly = data[0]
 
         return WeeklyMessage(
-            title = weekly.title,
-            speaker = weekly.speaker,
-            date = weekly.date.strftime('%Y%m%d'),
-            link = weekly.link,
+            title = weekly['title'],
+            speaker = weekly['speaker'],
+            date = weekly['date'],
+            link = weekly['link'],
             )
 
     REG_RESOURCE = endpoints.ResourceContainer(
@@ -107,18 +117,12 @@ class B1CWeeklyApiV2(remote.Service):
                       path='weekly', http_method='GET',
                       name='weekly.list')
     def weeklies_list(self, unused_request):
-      data = Weekly.query().fetch()
+      data, store = getWeeklyList()
 
-      weeklies = WeeklyCollection(items = [
-          WeeklyMessage(
-            title = weekly.title,
-            speaker = weekly.speaker,
-            date = weekly.date.strftime('%Y%m%d'),
-            link = weekly.link,
-            ) for weekly in data 
-        ])
+      weeklies = WeeklyCollection(items = [WeeklyMessage(**weekly) for weekly in data ], store=store)
 
       return weeklies
+
 
     WHEN_RESOURCE = endpoints.ResourceContainer(
             message_types.VoidMessage,
@@ -137,10 +141,10 @@ class B1CWeeklyApiV2(remote.Service):
         weekly = data[0]
 
         return WeeklyMessage(
-            title = weekly.title,
-            speaker = weekly.speaker,
-            date = weekly.date.strftime('%Y%m%d'),
-            link = weekly.link,
+            title = weekly['title'],
+            speaker = weekly['speaker'],
+            date = weekly['date'],
+            link = weekly['link'],
             )
 
     REG_RESOURCE = endpoints.ResourceContainer(

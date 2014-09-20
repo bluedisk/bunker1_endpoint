@@ -15,7 +15,7 @@ handlers:
 
 - url: /crawling/.*
   script: crawler.app
-  login: admin
+  #login: admin
 
 - url: /check_push_error/.*
   script: check_push_error.app
